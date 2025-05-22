@@ -43,6 +43,8 @@ npm install
 npm run build
 ```
 
+---
+
 ## 📦 API Used
 
 - Exchange Rate: ExchangeRate-API
