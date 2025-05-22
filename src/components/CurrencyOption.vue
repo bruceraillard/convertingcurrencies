@@ -1,5 +1,5 @@
 <template>
-  <div class="container mt-5">
+  <div class="mainContainer">
     <!-- Title and input section -->
     <div class="titles">
       <h1>Bureau de change</h1>
@@ -50,8 +50,8 @@ body {
 }
 
 /* Container for central content alignment */
-.container {
-  max-width: 1200px;
+.mainContainer {
+  width: 100%;
   margin: auto;
 }
 
@@ -103,10 +103,11 @@ body {
 /* Currency card container layout: 2 columns */
 .currenciesList {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: space-evenly;
   padding: 20px;
+  gap: 20px;
 }
 
 /* Individual currency card with animated background */
@@ -119,7 +120,7 @@ body {
   color: #fff;
   border-radius: 14px;
   padding: 20px;
-  width: 48%;
+  width: 45%;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
