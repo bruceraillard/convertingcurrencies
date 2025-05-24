@@ -1,8 +1,6 @@
 <template>
   <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link> |
-    <router-link to="/currencies-option">Currency - Option</router-link>
+    <router-link to="/">Currency - Option</router-link> |
     <router-link to="/currencies-composition">Currency - Composition</router-link>
   </nav>
   <router-view/>

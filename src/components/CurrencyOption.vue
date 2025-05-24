@@ -1,35 +1,56 @@
 <template>
+  <!-- Main container for the currency converter application -->
   <div class="mainContainer">
-    <!-- Title and input section -->
+    <!-- Title, description and theme toggle section -->
     <div class="titles">
+      <!-- Application title in French -->
       <h1>Bureau de change</h1>
+      <!-- English subtitle -->
       <p>Exchange office</p>
+      <!-- Button to switch between light and dark modes -->
+      <button @click="toggleTheme" class="themeToggle">
+        {{ isLightTheme ? '🌙' : '☀️' }}
+      </button>
 
-      <!-- Input to enter amount in XPF -->
+      <!-- Input field for entering amount in XPF -->
       <div class="amountToConvert">
-        <input type="number" v-model.number="amount" min="0" placeholder="Montant en XPF"/>
+        <!-- Bound to `amount` data property with numeric parsing -->
+        <input
+            type="number"
+            v-model.number="amount"
+            min="0"
+            placeholder="Montant en XPF"
+        />
+        <!-- Currency label -->
         <span>XPF</span>
       </div>
+
+      <!-- Displays timestamp of last successful data fetch -->
+      <p class="updated">Dernière mise à jour : {{ lastUpdated }}</p>
     </div>
 
-    <!-- Display loading message while data is being fetched -->
+    <!-- Show while data is being fetched -->
     <div v-if="loading">Loading...</div>
 
-    <!-- Display the currency cards once data is loaded -->
+    <!-- Once data is ready, render currency cards -->
     <div v-else>
       <div class="currenciesList">
-        <!-- Loop through all currencies to display their info -->
-        <div v-for="(entry, index) in currencies" :key="index">
-          <!-- Country flag -->
+        <!-- Loop through each currency entry -->
+        <div
+            v-for="(entry, index) in currencies"
+            :key="index"
+            :class="[isLightTheme ? 'lightCard' : 'darkCard']"
+        >
+          <!-- Display country flag based on currency code -->
           <img :src="entry.flagUrl" :alt="entry.code"/>
 
-          <!-- Currency name in French and English -->
+          <!-- Show currency names in French and English -->
           <div class="countryCurrency">
             <p>{{ entry.name_fr }}</p>
             <p>{{ entry.name_en }}</p>
           </div>
 
-          <!-- Converted amount + currency code -->
+          <!-- Calculate and display converted amount -->
           <p>{{ (amount * entry.rate).toFixed(2) }} {{ entry.code }}</p>
         </div>
       </div>
@@ -37,56 +58,188 @@
   </div>
 </template>
 
+<script>
+// Vue component for option-based currency conversion
+export default {
+  name: 'DevisesOption',
+  data() {
+    return {
+      // Indicates whether API data is being loaded
+      loading: true,
+      // Stores currency info and conversion rates
+      currencies: [],
+      // User-entered amount in XPF by default
+      amount: 100,
+      // Records the last fetched timestamp
+      lastUpdated: '',
+      // Identifier for the update interval
+      intervalId: null,
+      // Tracks whether light theme is active
+      isLightTheme: false,
+    };
+  },
+  mounted() {
+    // Apply dark theme by default on component mount
+    document.body.classList.add('darkBody');
+    // Fetch rates immediately
+    this.fetchRates();
+    // Schedule hourly updates for rates
+    this.intervalId = setInterval(() => {
+      this.fetchRates();
+    }, 3600000);
+  },
+  beforeUnmount() {
+    // Clean up the interval when component is destroyed
+    clearInterval(this.intervalId);
+  },
+  methods: {
+    // Retrieves latest exchange rates from external API
+    fetchRates() {
+      fetch('https://v6.exchangerate-api.com/v6/ceb3e48ff7d6b698944a5eb2/latest/XPF')
+          .then(res => res.json())
+          .then(data => {
+            // Verify response contains conversion rates
+            if (!data.conversion_rates) {
+              console.error('Conversion rates not found:', data);
+              this.loading = false;
+              return;
+            }
+
+            // Map of currency codes to display labels and flag codes
+            const currencyLabels = {
+              AUD: {en: "Australian Dollar", fr: "Dollar australien", countryCode: "AU"},
+              NZD: {en: "New Zealand Dollar", fr: "Dollar néo-zélandais", countryCode: "NZ"},
+              CAD: {en: "Canadian Dollar", fr: "Dollar canadien", countryCode: "CA"},
+              SGD: {en: "Singapore Dollar", fr: "Dollar singapourien", countryCode: "SG"},
+              CHF: {en: "Swiss Franc", fr: "Franc suisse", countryCode: "CH"},
+              THB: {en: "Thai Baht", fr: "Baht thaïlandais", countryCode: "TH"},
+              EUR: {en: "Euro", fr: "Euro", countryCode: "EU"},
+              USD: {en: "US Dollar", fr: "Dollar américain", countryCode: "US"},
+              FJD: {en: "Fijian Dollar", fr: "Dollar fidjien", countryCode: "FJ"},
+              VUV: {en: "Vanuatu Vatu", fr: "Vatu vanuatuan", countryCode: "VU"},
+              GBP: {en: "Pound Sterling", fr: "Livre sterling", countryCode: "GB"},
+              JPY: {en: "Japanese Yen", fr: "Yen japonais", countryCode: "JP"},
+            };
+
+            // Convert API data into an array of objects for rendering
+            this.currencies = Object.entries(currencyLabels).map(([code, labels]) => {
+              const countryCode = labels.countryCode.toLowerCase() || 'xx';
+              return {
+                code,
+                name_en: labels.en,
+                name_fr: labels.fr,
+                rate: data.conversion_rates[code] || 0,
+                flagUrl: `https://flagcdn.com/h40/${countryCode}.png`,
+              };
+            });
+
+            // Update the timestamp to reflect new data
+            this.lastUpdated = new Date().toLocaleString('fr-FR');
+            // Disable loading indicator
+            this.loading = false;
+          })
+          .catch(error => {
+            console.error('Error while loading JSON data:', error);
+            // Disable loading indicator on error
+            this.loading = false;
+          });
+    },
+    // Toggles between light and dark theme classes on <body>
+    toggleTheme() {
+      this.isLightTheme = !this.isLightTheme;
+      document.body.classList.toggle('lightBody', this.isLightTheme);
+      document.body.classList.toggle('darkBody', !this.isLightTheme);
+    },
+  },
+};
+</script>
 
 <style>
-/* Global page background with animated gradient */
+/* ===== Global Styles ===== */
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(-45deg, #012030, #13678A, #45C4B0, #9AEBA3);
-  background-size: 400% 400%;
-  animation: gradientBackground 20s ease-in-out infinite;
   min-height: 100vh;
   margin: 0;
 }
 
-/* Container for central content alignment */
+/* Theme background animations */
+body.darkBody {
+  background: linear-gradient(-45deg, #012030, #13678A, #45C4B0, #9AEBA3);
+  background-size: 400% 400%;
+  animation: gradientBackground 20s ease-in-out infinite;
+}
+
+body.lightBody {
+  background: linear-gradient(-45deg, #fefcea, #f1daff, #cfe8ff, #e4fff8);
+  background-size: 400% 400%;
+  animation: gradientBackground 20s ease-in-out infinite;
+}
+
+/* Force text color based on theme */
+body.darkBody > * {
+  color: #ffffff !important;
+}
+
+body.lightBody > * {
+  color: #000000 !important;
+}
+
+/* ===== Theme Toggle Button ===== */
+.themeToggle {
+  background: transparent;
+  border: 2px solid #fff;
+  border-radius: 50px;
+  font-size: 1.5rem;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+body.lightBody .themeToggle {
+  border-color: #000;
+  color: #000;
+}
+
+.themeToggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Layout Containers ===== */
 .mainContainer {
   width: 100%;
   margin: auto;
 }
 
-/* Title section styling */
 .titles {
   text-align: center;
   margin-bottom: 30px;
 }
 
+/* ===== Headings ===== */
 .titles h1 {
-  color: #ffffff;
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
 }
 
 .titles p {
-  color: #dddddd;
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
   text-transform: uppercase;
 }
 
-/* Currency input wrapper */
+/* ===== Amount Input Section ===== */
 .amountToConvert {
   display: flex;
   flex-direction: column;
   align-items: end;
+  margin-right: 20px;
 }
 
-/* Currency input field styling */
 .amountToConvert input {
   padding: 12px 20px;
   font-size: 1.2rem;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   outline: none;
   width: 150px;
@@ -95,36 +248,46 @@ body {
   margin-top: 10px;
 }
 
-/* XPF label */
-.amountToConvert span {
-  color: #fff;
-}
-
-/* Currency card container layout: 2 columns */
+/* ===== Currency Cards ===== */
 .currenciesList {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
   justify-content: space-evenly;
   padding: 20px;
   gap: 20px;
 }
 
-/* Individual currency card with animated background */
 .currenciesList > div {
   display: flex;
   align-items: center;
-  background: linear-gradient(-45deg, #9AEBA3, #45C4B0, #13678A, #012030);
   background-size: 400% 400%;
-  animation: cardGradient 20s ease-in-out infinite;
-  color: #fff;
-  border-radius: 14px;
-  padding: 20px;
+  background-position: 0% 50%;
+  animation: cardGradient 20s ease-in-out infinite, fadeInUp 0.6s forwards;
+  border-radius: 16px;
+  padding: 24px;
   width: 45%;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-/* Flag image styling */
+.darkCard {
+  background: linear-gradient(-45deg, #9AEBA3, #45C4B0, #13678A, #012030);
+  color: #ffffff;
+}
+
+.lightCard {
+  background: linear-gradient(-45deg, #e4fff8, #cfe8ff, #f1daff, #fefcea);
+  color: #000000;
+}
+
+.currenciesList > div:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Flag Images ===== */
 .currenciesList img {
   width: 55px;
   height: 38px;
@@ -133,26 +296,22 @@ body {
   margin-right: 15px;
 }
 
-/* Currency name container */
+/* ===== Currency Name Text ===== */
 .currenciesList .countryCurrency {
   flex: 1;
 }
 
-/* French currency name styling */
 .currenciesList .countryCurrency p:first-child {
   font-weight: bold;
   font-size: 1.2rem;
   margin: 0;
 }
 
-/* English currency name styling */
 .currenciesList .countryCurrency p:last-child {
   font-size: 0.95rem;
-  color: #e2e2e2;
   margin: 2px 0 0 0;
 }
 
-/* Amount display styling */
 .currenciesList > div > p:last-child {
   font-size: 1.3rem;
   font-weight: bold;
@@ -160,7 +319,7 @@ body {
   white-space: nowrap;
 }
 
-/* Background animation for the body */
+/* ===== Animations ===== */
 @keyframes gradientBackground {
   0% {
     background-position: 0% 50%;
@@ -173,7 +332,6 @@ body {
   }
 }
 
-/* Gradient animation for each currency card */
 @keyframes cardGradient {
   0% {
     background-position: 0% 50%;
@@ -186,70 +344,45 @@ body {
   }
 }
 
-</style>
-
-<script>
-export default {
-  name: 'DevisesOption',
-
-  // Component reactive data
-  data() {
-    return {
-      loading: true,        // Indicates if the data is being fetched
-      currencies: [],       // Final list of currency objects to display
-      amount: 100           // Default amount in XPF
-    };
-  },
-
-  // Lifecycle hook for fetching data when component is mounted
-  mounted() {
-    fetch("https://v6.exchangerate-api.com/v6/ceb3e48ff7d6b698944a5eb2/latest/XPF")
-        .then(res => res.json())
-        .then(data => {
-          // Check if conversion data exists
-          if (!data.conversion_rates) {
-            console.error('Conversion rates not found:', data);
-            this.loading = false;
-            return;
-          }
-
-          // Currency display configuration: names + flags
-          const currencyLabels = {
-            AUD: {en: "Australian Dollar", fr: "Dollar australien", countryCode: "AU"},
-            NZD: {en: "New Zealand Dollar", fr: "Dollar néo-zélandais", countryCode: "NZ"},
-            CAD: {en: "Canadian Dollar", fr: "Dollar canadien", countryCode: "CA"},
-            SGD: {en: "Singapore Dollar", fr: "Dollar singapourien", countryCode: "SG"},
-            CHF: {en: "Swiss Franc", fr: "Franc suisse", countryCode: "CH"},
-            THB: {en: "Thai Baht", fr: "Baht thaïlandais", countryCode: "TH"},
-            EUR: {en: "Euro", fr: "Euro", countryCode: "EU"},
-            USD: {en: "US Dollar", fr: "Dollar américain", countryCode: "US"},
-            FJD: {en: "Fijian Dollar", fr: "Dollar fidjien", countryCode: "FJ"},
-            VUV: {en: "Vanuatu Vatu", fr: "Vatu vanuatuan", countryCode: "VU"},
-            GBP: {en: "Pound Sterling", fr: "Livre sterling", countryCode: "GB"},
-            JPY: {en: "Japanese Yen", fr: "Yen japonais", countryCode: "JP"},
-          };
-
-          // Create final list of currency entries
-          this.currencies = Object.entries(currencyLabels).map(([code, labels]) => {
-            const countryCode = labels.countryCode?.toLowerCase() || "xx";
-
-            return {
-              code,
-              name_en: labels.en,
-              name_fr: labels.fr,
-              rate: data.conversion_rates[code] ?? 0,
-              flagUrl: `https://flagcdn.com/h40/${countryCode}.png`
-            };
-          });
-
-          this.loading = false;
-        })
-        .catch(error => {
-          // Handle fetch error
-          console.error("Error while loading JSON data:", error);
-          this.loading = false;
-        });
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-};
-</script>
+}
 
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+  .currenciesList > div {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .titles h1 {
+    font-size: 2rem;
+  }
+
+  .amountToConvert input {
+    width: 130px;
+    font-size: 1rem;
+  }
+
+  .currenciesList > div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .currenciesList > div > p:last-child {
+    align-self: flex-end;
+    text-align: right;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .currenciesList img {
+    margin-bottom: 10px;
+    margin-right: 0;
+  }
+}
+</style>
