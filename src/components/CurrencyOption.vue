@@ -1,6 +1,6 @@
 <template>
   <!-- Main container for the currency converter application -->
-  <div class="mainContainer">
+  <div id="mainContainer1" class="mainContainer" :class="[isLightTheme ? 'lightBody' : 'darkBody']">
     <!-- Title, description and theme toggle section -->
     <div class="titles">
       <!-- Application title in French -->
@@ -80,7 +80,7 @@ export default {
   },
   mounted() {
     // Apply dark theme by default on component mount
-    document.body.classList.add('darkBody');
+    document.getElementById("mainContainer1").classList.add('darkBody');
     // Fetch rates immediately
     this.fetchRates();
     // Schedule hourly updates for rates
@@ -147,8 +147,6 @@ export default {
     // Toggles between light and dark theme classes on <body>
     toggleTheme() {
       this.isLightTheme = !this.isLightTheme;
-      document.body.classList.toggle('lightBody', this.isLightTheme);
-      document.body.classList.toggle('darkBody', !this.isLightTheme);
     },
   },
 };
@@ -163,13 +161,13 @@ body {
 }
 
 /* Theme background animations */
-body.darkBody {
+.darkBody {
   background: linear-gradient(-45deg, #012030, #13678A, #45C4B0, #9AEBA3);
   background-size: 400% 400%;
   animation: gradientBackground 20s ease-in-out infinite;
 }
 
-body.lightBody {
+.lightBody {
   background: linear-gradient(-45deg, #fefcea, #f1daff, #cfe8ff, #e4fff8);
   background-size: 400% 400%;
   animation: gradientBackground 20s ease-in-out infinite;

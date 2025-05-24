@@ -1,6 +1,6 @@
 <template>
   <!-- Main container for the currency converter application -->
-  <div class="mainContainer">
+  <div id="mainContainer2" class="mainContainer" :class="[isLightTheme ? 'lightBody' : 'darkBody']">
     <!-- Title, description and theme toggle section -->
     <div class="titles">
       <!-- Application title in French -->
@@ -120,17 +120,15 @@ async function fetchRates() {
   }
 }
 
-// Function to toggle between light and dark theme on <body>
+// Function to toggle between light and dark theme
 function toggleTheme() {
   isLightTheme.value = !isLightTheme.value;
-  document.body.classList.toggle('lightBody', isLightTheme.value);
-  document.body.classList.toggle('darkBody', !isLightTheme.value);
 }
 
 // Lifecycle hook: runs after component is mounted
 onMounted(() => {
   // Default to dark theme
-  document.body.classList.add('darkBody');
+  document.getElementById("mainContainer2").classList.add('darkBody');
 
   // Initial data fetch
   fetchRates();
